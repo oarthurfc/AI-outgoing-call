@@ -19,7 +19,7 @@ const ULTRAVOX_CALL_CONFIG = {
     model: "fixie-ai/ultravox",
     voice: "Keren-Brazilian-Portuguese",
     temperature: 0.3,
-    firstSpeaker: "FIRST_SPEAKER_USER",
+    firstSpeaker: "FIRST_SPEAKER_AGENT",
     medium: { twilio: {} },
 };
 
@@ -72,7 +72,6 @@ app.post("/start-call", async (req, res) => {
             from: TWILIO_PHONE_NUMBER,
         });
 
-        console.log("Call initiated:", call.sid);
         res.json({ success: true, callSid: call.sid });
     } catch (error) {
         console.error("Error:", error.message);
