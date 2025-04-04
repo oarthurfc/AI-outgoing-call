@@ -66,7 +66,7 @@ app.post("/start-call", async (req, res) => {
             from: TWILIO_PHONE_NUMBER,
             machineDetection: "Enable",
             machineDetectionTimeout: 6,
-            url: `${BASE_URL}/handle-answer?name=${encodeURIComponent(name)}`,
+            url: `${BASE_URL}/handle-answer`,
             statusCallback: `${BASE_URL}/call-ended`,
             statusCallbackEvent: ["completed"],
         });
@@ -80,65 +80,87 @@ app.post("/start-call", async (req, res) => {
 
 // Endpoint que analisa se quem atendeu é humano ou caixa postal
 app.post("/handle-answer", async (req, res) => {
-    const answeredBy = req.body.AnsweredBy;
-    const name = req.query.name;
+    console.log("Webhook /handle-answer recebido com body:", req.body);
 
-    console.log("Detected AnsweredBy:", answeredBy);
+    try {
+        const {
+            CallSid,
+            AnsweredBy
+        } = req.body;
 
-    if (answeredBy === "human") {
-        try {
-            const { joinUrl } = await createUltravoxCall();
-            console.log("Conectando com Ultravox:", joinUrl);
+        console.log("CallSid:", CallSid);
+        console.log("AnsweredBy:", AnsweredBy);
 
-            res.type("text/xml").send(`
-                <Response>
-                    <Connect>
-                        <Stream url="${joinUrl}"/>
-                    </Connect>
-                </Response>
-            `);
-        } catch (error) {
-            console.error("Erro ao criar chamada Ultravox:", error.message);
-            res.type("text/xml").send(`<Response><Say>Erro interno ao conectar com nosso sistema.</Say><Hangup/></Response>`);
+        if (answeredBy === "human") {
+            try {
+                const { joinUrl } = await createUltravoxCall();
+                console.log("Conectando com Ultravox:", joinUrl);
+    
+                res.type("text/xml").send(`
+                    <Response>
+                        <Connect>
+                            <Stream url="${joinUrl}"/>
+                        </Connect>
+                    </Response>
+                `);
+            } catch (error) {
+                console.error("Erro ao criar chamada Ultravox:", error.message);
+                res.type("text/xml").send(`<Response><Say>Erro interno ao conectar com nosso sistema.</Say><Hangup/></Response>`);
+            }
+        } else {
+            console.log("Chamada não foi atendida por humano. Encerrando...");
+            res.type("text/xml").send(`<Response><Hangup/></Response>`);
         }
-    } else {
-        console.log("Chamada não foi atendida por humano. Encerrando...");
-        res.type("text/xml").send(`<Response><Hangup/></Response>`);
+        
+        res.status(200).send("OK");
+    } catch (error) {
+        console.error("Erro no /handle-answer:", error);
+        res.status(500).send("Erro interno no servidor");
     }
 });
 
 // Endpoint que avisa quando a chamada terminou (usado pelo n8n via Wait Webhook)
 app.post("/call-ended", (req, res) => {
+    console.log("Webhook /call-ended recebido com body:", req.body);
 
-    const {
-        CallSid,
-        CallStatus,
-        CallDuration,
-        AnsweredBy
-    } = req.body;
-    
-
-    fetch(`https://oarthurfc.app.n8n.cloud/webhook-waiting/80`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            CallSid: CallSid,
+    try {
+        const {
+            CallSid,
             CallStatus,
             CallDuration,
             AnsweredBy
-        }),
-    })
-        .then((response) => response.json())
-        .then((data) => {
-            console.log("Webhook n8n notificado com sucesso:", data);
-        })
-        .catch((error) => {
-            console.error("Erro ao notificar webhook n8n:", error);
-        });
+        } = req.body;
 
-    res.status(200).json({ received: true });
+        console.log("CallSid:", CallSid);
+        console.log("CallStatus:", CallStatus);
+        console.log("CallDuration:", CallDuration);
+        console.log("AnsweredBy:", AnsweredBy);
+
+        fetch(`https://oarthurfc.app.n8n.cloud/webhook-waiting/80`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                CallSid: CallSid,
+                CallStatus,
+                CallDuration,
+                AnsweredBy
+            }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                console.log("Webhook n8n notificado com sucesso:", data);
+            })
+            .catch((error) => {
+                console.error("Erro ao notificar webhook n8n:", error);
+            });
+
+        res.status(200).send("OK");
+    } catch (error) {
+        console.error("Erro no /call-ended:", error);
+        res.status(500).send("Erro interno no servidor");
+    }
 });
 
 // Inicia o servidor
