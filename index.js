@@ -2,12 +2,10 @@ import express from "express";
 import twilio from "twilio";
 import https from "https";
 import dotenv from "dotenv";
-import fetch from "node-fetch"; // Import necessário para Node < 18
 
 dotenv.config();
 
 const app = express();
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -17,8 +15,7 @@ const {
     TWILIO_AUTH_TOKEN,
     TWILIO_PHONE_NUMBER,
     ULTRAVOX_API_KEY,
-    SYSTEM_PROMPT,
-    N8N_WEBHOOK_URL 
+    SYSTEM_PROMPT
 } = process.env;
 
 const ULTRAVOX_API_URL = "https://api.ultravox.ai/api/calls";
@@ -32,7 +29,10 @@ const ULTRAVOX_CALL_CONFIG = {
     medium: { twilio: {} },
 };
 
-// Função que cria a sala do Ultravox
+// Mapeia CallSid => resumeUrl (n8n)
+const callResumeMap = new Map();
+
+// Cria a sala no Ultravox
 async function createUltravoxCall() {
     const request = https.request(ULTRAVOX_API_URL, {
         method: "POST",
@@ -54,13 +54,13 @@ async function createUltravoxCall() {
     });
 }
 
-// Endpoint chamado pelo n8n para iniciar a ligação
+// Endpoint chamado pelo n8n
 app.post("/start-call", async (req, res) => {
     try {
-        const { to, name } = req.body;
+        const { to, name, resumeUrl } = req.body;
 
-        if (!to) {
-            return res.status(400).json({ error: "Número de destino ausente" });
+        if (!to || !resumeUrl) {
+            return res.status(400).json({ error: "Parâmetro 'to' ou 'resumeUrl' ausente" });
         }
 
         const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
@@ -73,8 +73,10 @@ app.post("/start-call", async (req, res) => {
             url: `${BASE_URL}/handle-answer?name=${encodeURIComponent(name)}`,
             statusCallback: `${BASE_URL}/call-ended`,
             statusCallbackEvent: ["completed"],
-            statusCallbackMethod: "POST",
         });
+
+        // Armazena o resumeUrl
+        callResumeMap.set(call.sid, resumeUrl);
 
         res.json({ success: true, callSid: call.sid });
     } catch (error) {
@@ -83,58 +85,54 @@ app.post("/start-call", async (req, res) => {
     }
 });
 
-// Endpoint que analisa se quem atendeu é humano ou caixa postal
+// Webhook chamado quando a ligação é atendida
 app.post("/handle-answer", async (req, res) => {
-    console.log("Webhook /handle-answer recebido com body:", req.body);
+    console.log("Webhook /handle-answer recebido:", req.body);
 
     try {
-        const {
-            CallSid,
-            AnsweredBy
-        } = req.body;
-
-        console.log("CallSid:", CallSid);
-        console.log("AnsweredBy:", AnsweredBy);
+        const { CallSid, AnsweredBy } = req.body;
 
         if (AnsweredBy === "human") {
-            const { joinUrl } = await createUltravoxCall();
-            console.log("Conectando com Ultravox:", joinUrl);
+            try {
+                const { joinUrl } = await createUltravoxCall();
+                console.log("Conectando com Ultravox:", joinUrl);
 
-            return res.type("text/xml").send(`
-                <Response>
-                    <Connect>
-                        <Stream url="${joinUrl}"/>
-                    </Connect>
-                </Response>
-            `);
+                res.type("text/xml").send(`
+                    <Response>
+                        <Connect>
+                            <Stream url="${joinUrl}"/>
+                        </Connect>
+                    </Response>
+                `);
+            } catch (error) {
+                console.error("Erro ao criar chamada Ultravox:", error.message);
+                res.type("text/xml").send(`<Response><Say>Erro interno ao conectar com nosso sistema.</Say><Hangup/></Response>`);
+            }
         } else {
             console.log("Chamada não foi atendida por humano. Encerrando...");
-            return res.type("text/xml").send(`<Response><Hangup/></Response>`);
+            res.type("text/xml").send(`<Response><Hangup/></Response>`);
         }
     } catch (error) {
         console.error("Erro no /handle-answer:", error);
-        return res.status(500).send("Erro interno no servidor");
+        res.status(500).send("Erro interno no servidor");
     }
 });
 
-// Endpoint que avisa quando a chamada terminou (usado pelo n8n via Wait Webhook)
+// Webhook chamado ao fim da chamada
 app.post("/call-ended", async (req, res) => {
-    console.log("Webhook /call-ended recebido com body:", req.body);
+    console.log("Webhook /call-ended recebido:", req.body);
 
     try {
-        const {
-            CallSid,
-            CallStatus,
-            CallDuration,
-            AnsweredBy
-        } = req.body;
+        const { CallSid, CallStatus, CallDuration, AnsweredBy } = req.body;
 
-        console.log("CallSid:", CallSid);
-        console.log("CallStatus:", CallStatus);
-        console.log("CallDuration:", CallDuration);
-        console.log("AnsweredBy:", AnsweredBy);
+        const resumeUrl = callResumeMap.get(CallSid);
 
-        const response = await fetch(N8N_WEBHOOK_URL, {
+        if (!resumeUrl) {
+            console.error("resumeUrl não encontrado para CallSid:", CallSid);
+            return res.status(500).send("resumeUrl não encontrado");
+        }
+
+        await fetch(resumeUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -145,9 +143,8 @@ app.post("/call-ended", async (req, res) => {
             }),
         });
 
-        const data = await response.json();
-        console.log("Webhook n8n notificado com sucesso:", data);
-
+        console.log("Webhook n8n notificado com sucesso");
+        callResumeMap.delete(CallSid); // Limpa memória
         res.status(200).send("OK");
     } catch (error) {
         console.error("Erro no /call-ended:", error);
