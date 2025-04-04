@@ -8,15 +8,16 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-const BASE_URL = process.env.BASE_URL;
+const {
+    BASE_URL,
+    TWILIO_ACCOUNT_SID,
+    TWILIO_AUTH_TOKEN,
+    TWILIO_PHONE_NUMBER,
+    ULTRAVOX_API_KEY,
+    SYSTEM_PROMPT
+} = process.env;
 
-const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
-const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
-const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER;
-const STATUS_CALLBACK_URL = process.env.STATUS_CALLBACK_URL;
-
-const ULTRAVOX_API_KEY = process.env.ULTRAVOX_API_KEY;
-const SYSTEM_PROMPT = process.env.SYSTEM_PROMPT;
+const ULTRAVOX_API_URL = "https://api.ultravox.ai/api/calls";
 
 const ULTRAVOX_CALL_CONFIG = {
     systemPrompt: SYSTEM_PROMPT,
@@ -27,8 +28,7 @@ const ULTRAVOX_CALL_CONFIG = {
     medium: { twilio: {} },
 };
 
-const ULTRAVOX_API_URL = "https://api.ultravox.ai/api/calls";
-
+// Função que cria a sala do Ultravox
 async function createUltravoxCall() {
     const request = https.request(ULTRAVOX_API_URL, {
         method: "POST",
@@ -40,56 +40,108 @@ async function createUltravoxCall() {
 
     return new Promise((resolve, reject) => {
         let data = "";
-
         request.on("response", (response) => {
             response.on("data", (chunk) => (data += chunk));
             response.on("end", () => resolve(JSON.parse(data)));
         });
-
         request.on("error", reject);
         request.write(JSON.stringify(ULTRAVOX_CALL_CONFIG));
         request.end();
     });
 }
 
-// 🔹 Criando um endpoint HTTP para receber a requisição do n8n
+// Endpoint chamado pelo n8n para iniciar a ligação
 app.post("/start-call", async (req, res) => {
     try {
-        const { to } = req.body;  // Recebe o número de telefone do n8n
+        const { to, name } = req.body;
+
         if (!to) {
             return res.status(400).json({ error: "Número de destino ausente" });
         }
 
-        console.log("Creating Ultravox call...");
-        const { joinUrl } = await createUltravoxCall();
-        console.log("Got joinUrl:", joinUrl);
-
         const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
-        console.log("client:", client);
+
         const call = await client.calls.create({
-            twiml: `<Response>
-              <Connect>
-                  <Stream url="${joinUrl}"/>
-              </Connect>
-            </Response>`,
             to: to,
             from: TWILIO_PHONE_NUMBER,
-            machineDetection: 'Enable', 
-            machineDetectionTimeout: 5,
-            statusCallback: "",
-            statusCallbackEvent: ["completed"], // Só quando a ligação terminar
-            statusCallbackMethod: "POST"
+            machineDetection: "Enable",
+            machineDetectionTimeout: 6,
+            url: `${BASE_URL}/handle-answer?name=${encodeURIComponent(name)}`,
+            statusCallback: `${BASE_URL}/call-ended`,
+            statusCallbackEvent: ["completed"],
         });
-          
 
         res.json({ success: true, callSid: call.sid });
     } catch (error) {
-        console.error("Error:", error.message);
+        console.error("Erro ao iniciar chamada:", error.message);
         res.status(500).json({ error: error.message });
     }
 });
 
-// 🔹 Iniciando o servidor na porta 3030
+// Endpoint que analisa se quem atendeu é humano ou caixa postal
+app.post("/handle-answer", async (req, res) => {
+    const answeredBy = req.body.AnsweredBy;
+    const name = req.query.name;
+
+    console.log("Detected AnsweredBy:", answeredBy);
+
+    if (answeredBy === "human") {
+        try {
+            const { joinUrl } = await createUltravoxCall();
+            console.log("Conectando com Ultravox:", joinUrl);
+
+            res.type("text/xml").send(`
+                <Response>
+                    <Connect>
+                        <Stream url="${joinUrl}"/>
+                    </Connect>
+                </Response>
+            `);
+        } catch (error) {
+            console.error("Erro ao criar chamada Ultravox:", error.message);
+            res.type("text/xml").send(`<Response><Say>Erro interno ao conectar com nosso sistema.</Say><Hangup/></Response>`);
+        }
+    } else {
+        console.log("Chamada não foi atendida por humano. Encerrando...");
+        res.type("text/xml").send(`<Response><Hangup/></Response>`);
+    }
+});
+
+// Endpoint que avisa quando a chamada terminou (usado pelo n8n via Wait Webhook)
+app.post("/call-ended", (req, res) => {
+
+    const {
+        CallSid,
+        CallStatus,
+        CallDuration,
+        AnsweredBy
+    } = req.body;
+    
+
+    fetch(`https://oarthurfc.app.n8n.cloud/webhook-waiting/80`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            CallSid: CallSid,
+            CallStatus,
+            CallDuration,
+            AnsweredBy
+        }),
+    })
+        .then((response) => response.json())
+        .then((data) => {
+            console.log("Webhook n8n notificado com sucesso:", data);
+        })
+        .catch((error) => {
+            console.error("Erro ao notificar webhook n8n:", error);
+        });
+
+    res.status(200).json({ received: true });
+});
+
+// Inicia o servidor
 app.listen(3030, () => {
-    console.log("Server is running on port 3030");
+    console.log("Servidor rodando na porta 3030");
 });
