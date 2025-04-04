@@ -2,11 +2,14 @@ import express from "express";
 import twilio from "twilio";
 import https from "https";
 import dotenv from "dotenv";
+import fetch from "node-fetch"; // Import necessário para Node < 18
 
 dotenv.config();
 
 const app = express();
+
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 const {
     BASE_URL,
@@ -14,7 +17,8 @@ const {
     TWILIO_AUTH_TOKEN,
     TWILIO_PHONE_NUMBER,
     ULTRAVOX_API_KEY,
-    SYSTEM_PROMPT
+    SYSTEM_PROMPT,
+    N8N_WEBHOOK_URL 
 } = process.env;
 
 const ULTRAVOX_API_URL = "https://api.ultravox.ai/api/calls";
@@ -62,13 +66,14 @@ app.post("/start-call", async (req, res) => {
         const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
 
         const call = await client.calls.create({
-            to: to,
+            to,
             from: TWILIO_PHONE_NUMBER,
             machineDetection: "Enable",
             machineDetectionTimeout: 6,
-            url: `${BASE_URL}/handle-answer`,
+            url: `${BASE_URL}/handle-answer?name=${encodeURIComponent(name)}`,
             statusCallback: `${BASE_URL}/call-ended`,
             statusCallbackEvent: ["completed"],
+            statusCallbackMethod: "POST",
         });
 
         res.json({ success: true, callSid: call.sid });
@@ -91,36 +96,29 @@ app.post("/handle-answer", async (req, res) => {
         console.log("CallSid:", CallSid);
         console.log("AnsweredBy:", AnsweredBy);
 
-        if (answeredBy === "human") {
-            try {
-                const { joinUrl } = await createUltravoxCall();
-                console.log("Conectando com Ultravox:", joinUrl);
-    
-                res.type("text/xml").send(`
-                    <Response>
-                        <Connect>
-                            <Stream url="${joinUrl}"/>
-                        </Connect>
-                    </Response>
-                `);
-            } catch (error) {
-                console.error("Erro ao criar chamada Ultravox:", error.message);
-                res.type("text/xml").send(`<Response><Say>Erro interno ao conectar com nosso sistema.</Say><Hangup/></Response>`);
-            }
+        if (AnsweredBy === "human") {
+            const { joinUrl } = await createUltravoxCall();
+            console.log("Conectando com Ultravox:", joinUrl);
+
+            return res.type("text/xml").send(`
+                <Response>
+                    <Connect>
+                        <Stream url="${joinUrl}"/>
+                    </Connect>
+                </Response>
+            `);
         } else {
             console.log("Chamada não foi atendida por humano. Encerrando...");
-            res.type("text/xml").send(`<Response><Hangup/></Response>`);
+            return res.type("text/xml").send(`<Response><Hangup/></Response>`);
         }
-        
-        res.status(200).send("OK");
     } catch (error) {
         console.error("Erro no /handle-answer:", error);
-        res.status(500).send("Erro interno no servidor");
+        return res.status(500).send("Erro interno no servidor");
     }
 });
 
 // Endpoint que avisa quando a chamada terminou (usado pelo n8n via Wait Webhook)
-app.post("/call-ended", (req, res) => {
+app.post("/call-ended", async (req, res) => {
     console.log("Webhook /call-ended recebido com body:", req.body);
 
     try {
@@ -136,25 +134,19 @@ app.post("/call-ended", (req, res) => {
         console.log("CallDuration:", CallDuration);
         console.log("AnsweredBy:", AnsweredBy);
 
-        fetch(`https://oarthurfc.app.n8n.cloud/webhook-waiting/80`, {
+        const response = await fetch(N8N_WEBHOOK_URL, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                CallSid: CallSid,
+                CallSid,
                 CallStatus,
                 CallDuration,
                 AnsweredBy
             }),
-        })
-            .then((response) => response.json())
-            .then((data) => {
-                console.log("Webhook n8n notificado com sucesso:", data);
-            })
-            .catch((error) => {
-                console.error("Erro ao notificar webhook n8n:", error);
-            });
+        });
+
+        const data = await response.json();
+        console.log("Webhook n8n notificado com sucesso:", data);
 
         res.status(200).send("OK");
     } catch (error) {
