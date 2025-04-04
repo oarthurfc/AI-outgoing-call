@@ -74,6 +74,8 @@ app.post("/start-call", async (req, res) => {
             </Response>`,
             to: to,
             from: TWILIO_PHONE_NUMBER,
+            machineDetection: 'Enable', 
+            machineDetectionTimeout: 5,
             statusCallback: "",
             statusCallbackEvent: ["completed"], // Só quando a ligação terminar
             statusCallbackMethod: "POST"
