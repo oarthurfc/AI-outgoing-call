@@ -8,9 +8,13 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
+const BASE_URL = process.env.BASE_URL;
+
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER;
+const STATUS_CALLBACK_URL = process.env.STATUS_CALLBACK_URL;
+
 const ULTRAVOX_API_KEY = process.env.ULTRAVOX_API_KEY;
 const SYSTEM_PROMPT = process.env.SYSTEM_PROMPT;
 
@@ -64,13 +68,17 @@ app.post("/start-call", async (req, res) => {
         console.log("client:", client);
         const call = await client.calls.create({
             twiml: `<Response>
-                <Connect>
-                    <Stream url="${joinUrl}"/>
-                </Connect>
-              </Response>`,
+              <Connect>
+                  <Stream url="${joinUrl}"/>
+              </Connect>
+            </Response>`,
             to: to,
             from: TWILIO_PHONE_NUMBER,
+            statusCallback: "",
+            statusCallbackEvent: ["completed"], // Só quando a ligação terminar
+            statusCallbackMethod: "POST"
         });
+          
 
         res.json({ success: true, callSid: call.sid });
     } catch (error) {
