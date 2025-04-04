@@ -75,6 +75,7 @@ app.post("/start-call", async (req, res) => {
             url: `${BASE_URL}/handle-answer?name=${encodeURIComponent(name)}`,
             statusCallback: `${BASE_URL}/call-ended`,
             statusCallbackEvent: ["completed"],
+            timeLimit: 240, // Limite de 4 minutos
         });
 
         // Armazena o resumeUrl
