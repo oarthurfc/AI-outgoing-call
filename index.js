@@ -27,7 +27,7 @@ const ULTRAVOX_CALL_CONFIG = {
     temperature: 0.3,
     frequency_penalty: 0.3,
     presence_penalty: 0.2,
-    firstSpeaker: "FIRST_SPEAKER_AGENT",
+    firstSpeaker: "FIRST_SPEAKER_USER",
     medium: { twilio: {} },
 };
 
