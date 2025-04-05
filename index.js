@@ -71,7 +71,7 @@ app.post("/start-call", async (req, res) => {
             to,
             from: TWILIO_PHONE_NUMBER,
             machineDetection: "Enable",
-            machineDetectionTimeout: 4,
+            machineDetectionTimeout: 5,
             url: `${BASE_URL}/handle-answer?name=${encodeURIComponent(name)}`,
             statusCallback: `${BASE_URL}/call-ended`,
             statusCallbackEvent: ["completed"],
