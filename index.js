@@ -21,14 +21,13 @@ const {
 const ULTRAVOX_API_URL = "https://api.ultravox.ai/api/calls";
 
 const ULTRAVOX_CALL_CONFIG = {
-    systemPrompt: SYSTEM_PROMPT,
-    model: "fixie-ai/ultravox",
-    voice: "Keren-Brazilian-Portuguese",
-    temperature: 0.3,
-    frequency_penalty: 0.3,
-    presence_penalty: 0.2,
-    firstSpeaker: "FIRST_SPEAKER_USER",
-    medium: { twilio: {} },
+    systemPrompt: SYSTEM_PROMPT, 
+    model: "fixie-ai/ultravox",  
+    voice: "Keren-Brazilian-Portuguese", 
+    temperature: 0.3, 
+    firstSpeaker: "FIRST_SPEAKER_AGENT", 
+    medium: { twilio: {} }, 
+    maxDuration: "240s", 
 };
 
 // Mapeia CallSid => resumeUrl (n8n)
@@ -78,7 +77,7 @@ app.post("/start-call", async (req, res) => {
             timeLimit: 240, // Limite de 4 minutos
         });
 
-        // Armazena o resumeUrl
+        // Armazena o resumeUrl 
         callResumeMap.set(call.sid, resumeUrl);
 
         res.json({ success: true, callSid: call.sid });
@@ -97,8 +96,10 @@ app.post("/handle-answer", async (req, res) => {
 
         if (AnsweredBy === "human") {
             try {
-                const { joinUrl } = await createUltravoxCall();
-                console.log("Conectando com Ultravox:", joinUrl);
+                const ultravoxResponse = await createUltravoxCall();
+                console.log("Resposta completa do Ultravox:", JSON.stringify(ultravoxResponse, null, 2));
+                
+                const { joinUrl } = ultravoxResponse;
 
                 res.type("text/xml").send(`
                     <Response>
