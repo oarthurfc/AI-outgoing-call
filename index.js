@@ -30,9 +30,8 @@ async function createUltravoxCall(systemPrompt, name, day) {
         model: "fixie-ai/ultravox",
         voice: "Keren-Brazilian-Portuguese",
         firstSpeakingSettings: {
-            user: {
+            agent: {
                 fallback: {
-                    delay: "1s",
                     text: `Oi ${name}, tudo bem? Aqui é a Rafaela da Gol de Bet! Tô te ligando porque hoje você foi selecionado pra receber uma condição super especial...`
                 }
             }
