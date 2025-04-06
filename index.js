@@ -32,6 +32,7 @@ async function createUltravoxCall(systemPrompt, name, day) {
         firstSpeakingSettings: {
             user: {
                 fallback: {
+                    dalay: "1s",
                     text: `Oi ${name}, tudo bem? Aqui é a Rafaela da Gol de Bet! Tô te ligando porque hoje você foi selecionado pra receber uma condição super especial...`
                 }
             }
