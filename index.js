@@ -29,10 +29,9 @@ async function createUltravoxCall(systemPrompt, name, day) {
         temperature: 0.1,
         model: "fixie-ai/ultravox",
         voice: "Keren-Brazilian-Portuguese",
-        firstSpeaker: "FIRST_SPEAKER_AGENT",
-        firstSpeakingSettings: {
+        firstSpeakerSettings: {
             agent: {
-                text: `Oi ${name}, tudo bem? Aqui é a Rafaela da Gol de Bet! Tô te ligando porque hoje você foi selecionado pra receber uma condição super especial...`
+                text: `Oi ${name}, tudo bem? Aqui é a Rafaela da Gol de Bet! Tô te ligando porque hoje, ${day} você foi selecionado pra receber uma condição super especial que tá rolando só pra alguns usuários. Quer saber mais?`,
             }
         },        
         medium: { twilio: {} },
