@@ -23,17 +23,22 @@ const ULTRAVOX_API_URL = "https://api.ultravox.ai/api/calls";
 const callResumeMap = new Map();
 
 // Cria a sala no Ultravox com prompt dinâmico
-async function createUltravoxCall(systemPrompt) {
+async function createUltravoxCall(systemPrompt, name, day) {
     const callConfig = {
         systemPrompt,
         temperature: 0.1,
         model: "fixie-ai/ultravox",
         voice: "Keren-Brazilian-Portuguese",
-        firstSpeaker: "FIRST_SPEAKER_AGENT",
+        firstSpeakingSettings: {
+            type: "user",
+            fallback: {
+                text: `Oi ${name}, tudo bem? Aqui é a Rafaela da Gol de Bet! Tô te ligando porque hoje você foi selecionado pra receber uma condição super especial que tá rolando só pra alguns usuários. Se você se cadastrar agora, além de conseguir super odds, saques instantâneos via PIX, sem burocracia, e cashback todas as apostas, você ainda garante bônus exclusivos só válidos pra hoje, ${day} — e com saque via PIX instantâneo. É tudo na hora, sem burocracia, em uma plataforma 100% segura e confiável. É uma oportunidade única de começar com vantagens reais.Posso te ajudar com o cadastro rapidinho pra você já garantir esses benefícios antes que expirem?`
+            },
+        },
         medium: { twilio: {} },
         maxDuration: "240s",
         languageHint: "pt-BR",
-        timeExceededMessage: "Preciso ir agora, mas vou te enviar uma mensagem por SMS com sua surpresinha. Até logo!",
+        timeExceededMessage: "Preciso ir agora, mas vou te enviar uma mensagem por SMS com sua surpresinha. Até logo!"
     };
 
     const request = https.request(ULTRAVOX_API_URL, {
@@ -59,7 +64,7 @@ async function createUltravoxCall(systemPrompt) {
 // Inicia a ligação
 app.post("/start-call", async (req, res) => {
     try {
-        const { to, resumeUrl, systemPrompt } = req.body;
+        const { to, resumeUrl, systemPrompt, name, day } = req.body;
 
         if (!to || !resumeUrl || !systemPrompt) {
             return res.status(400).json({ error: "Parâmetros 'to', 'resumeUrl' ou 'systemPrompt' são obrigatórios" });
