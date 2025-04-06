@@ -31,9 +31,12 @@ async function createUltravoxCall(systemPrompt, name, day) {
         voice: "Keren-Brazilian-Portuguese",
         firstSpeakerSettings: {
             agent: {
-                text: `Oi ${name}, tudo bem? Aqui é a Rafaela da Gol de Bet! Tô te ligando porque hoje, ${day} você foi selecionado pra receber uma condição super especial que tá rolando só pra alguns usuários. Posso te contar mais?`,
+                text: `Fala ${name}!! Aqui é a Rafaela da Gol de Bet! Tô te ligando porque hoje, ${day} você foi selecionado pra receber uma condição super especial que tá rolando só pra alguns usuários. Posso te contar mais?`,
             }
         },        
+        selectedTools: [
+            { toolName: "hangUp" }
+        ],          
         medium: { twilio: {} },
         maxDuration: "240s",
         languageHint: "pt-BR",
