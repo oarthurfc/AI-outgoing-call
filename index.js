@@ -26,7 +26,7 @@ const callResumeMap = new Map();
 async function createUltravoxCall(systemPrompt, name, day) {
     const callConfig = {
         systemPrompt,
-        temperature: 0.1,
+        temperature: 0,
         model: "fixie-ai/ultravox",
         voice: "Keren-Brazilian-Portuguese",
         firstSpeakerSettings: {
