@@ -31,7 +31,7 @@ async function createUltravoxCall(systemPrompt, name, day) {
         voice: "Keren-Brazilian-Portuguese",
         firstSpeakerSettings: {
             agent: {
-                text: `Oi ${name}, tudo bem? Aqui é a Rafaela da Gol de Bet! Tô te ligando porque hoje, ${day} você foi selecionado pra receber uma condição super especial que tá rolando só pra alguns usuários. Quer saber mais?`,
+                text: `Oi ${name}, tudo bem? Aqui é a Rafaela da Gol de Bet! Tô te ligando porque hoje, ${day} você foi selecionado pra receber uma condição super especial que tá rolando só pra alguns usuários. Posso te contar mais?`,
             }
         },        
         medium: { twilio: {} },
@@ -80,7 +80,7 @@ app.post("/start-call", async (req, res) => {
         });
 
         // Armazena o resumeUrl e systemPrompt para esse CallSid
-        callResumeMap.set(call.sid, { resumeUrl, systemPrompt });
+        callResumeMap.set(call.sid, { resumeUrl, systemPrompt, name, day });
 
         res.json({ success: true, callSid: call.sid });
     } catch (error) {
@@ -102,7 +102,7 @@ app.post("/handle-answer", async (req, res) => {
             return res.type("text/xml").send(`<Response><Say>Erro interno ao buscar prompt.</Say><Hangup/></Response>`);
         }
 
-        const ultravoxResponse = await createUltravoxCall(meta.systemPrompt);
+        const ultravoxResponse = await createUltravoxCall(meta.systemPrompt, meta.name, meta.day);
         const { joinUrl } = ultravoxResponse;
 
         res.type("text/xml").send(`
