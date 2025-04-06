@@ -31,9 +31,7 @@ async function createUltravoxCall(systemPrompt, name, day) {
         voice: "Keren-Brazilian-Portuguese",
         firstSpeakingSettings: {
             agent: {
-                fallback: {
-                    text: `Oi ${name}, tudo bem? Aqui é a Rafaela da Gol de Bet! Tô te ligando porque hoje você foi selecionado pra receber uma condição super especial...`
-                }
+                text: `Oi ${name}, tudo bem? Aqui é a Rafaela da Gol de Bet! Tô te ligando porque hoje você foi selecionado pra receber uma condição super especial...`
             }
         },        
         medium: { twilio: {} },
