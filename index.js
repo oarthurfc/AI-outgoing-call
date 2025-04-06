@@ -30,11 +30,12 @@ async function createUltravoxCall(systemPrompt, name, day) {
         model: "fixie-ai/ultravox",
         voice: "Keren-Brazilian-Portuguese",
         firstSpeakingSettings: {
-            type: "user",
-            fallback: {
-                text: `Oi ${name}, tudo bem? Aqui é a Rafaela da Gol de Bet! Tô te ligando porque hoje você foi selecionado pra receber uma condição super especial que tá rolando só pra alguns usuários. Se você se cadastrar agora, além de conseguir super odds, saques instantâneos via PIX, sem burocracia, e cashback todas as apostas, você ainda garante bônus exclusivos só válidos pra hoje, ${day} — e com saque via PIX instantâneo. É tudo na hora, sem burocracia, em uma plataforma 100% segura e confiável. É uma oportunidade única de começar com vantagens reais.Posso te ajudar com o cadastro rapidinho pra você já garantir esses benefícios antes que expirem?`
-            },
-        },
+            user: {
+                fallback: {
+                    text: `Oi ${name}, tudo bem? Aqui é a Rafaela da Gol de Bet! Tô te ligando porque hoje você foi selecionado pra receber uma condição super especial...`
+                }
+            }
+        },        
         medium: { twilio: {} },
         maxDuration: "240s",
         languageHint: "pt-BR",
