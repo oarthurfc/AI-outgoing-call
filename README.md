@@ -1,70 +1,50 @@
-# Ultravox Twilio Outgoing Call Quickstart
+Com certeza! Aqui está um exemplo de um `README.md` completo, claro e profissional para o seu projeto da agente de voz da Gol de Bet:
 
-This Node.js application demonstrates how to make outgoing phone calls using Ultravox AI and Twilio. It sets up an AI-powered phone call where the AI agent (named Steve) will interact with the call recipient.
+---
 
-## Prerequisites
+# 🎯 Voice AI Caller - Gol de Bet
 
-- Node.js (v14 or higher)
-- An Ultravox API key
-- A Twilio account with:
-  - Account SID
-  - Auth Token
-  - A phone number
+Uma agente de voz inteligente chamada **Rafaela**, criada para realizar **ligações automáticas personalizadas** com o objetivo de converter antigos jogadores de outras casas de apostas em novos usuários da **Gol de Bet**, utilizando **linguagem natural**, **detecção de interesse** e **ferramentas automatizadas** como envio de SMS e desligamento automático da chamada.
 
-## Setup
+## 📋 Funcionalidades
 
-1. Clone this repository
-2. Install dependencies:
-```bash
-pnpm install
-```
+- 🤖 **Agente de voz treinada** com linguagem natural, estilo carismático e foco em conversão.
+- ☎️ **Ligações automáticas** para uma lista de leads de casas concorrentes.
+- 💬 **Detecção de respostas** com fallback dinâmico caso o lead não responda.
+- 🔁 **Diálogos dinâmicos**, com suporte a perguntas frequentes sobre promoções.
+- 📲 **Envio de SMS** com o link da promoção após manifestação de interesse.
+- 🔚 **Encerramento automático da chamada** após conversão (via `hangUp()`).
+- 📦 **Integração com n8n**, Google Sheets, Ultravox e Twilio.
 
-3. Configure your environment:
-   Open `index.js` and update the following constants with your credentials:
+## 🧠 Linguagem e comportamento da IA
 
-```javascript
-const ULTRAVOX_API_KEY = 'your_ultravox_api_key_here';
-const TWILIO_ACCOUNT_SID = 'your_twilio_account_sid_here';
-const TWILIO_AUTH_TOKEN = 'your_twilio_auth_token_here';
-const TWILIO_PHONE_NUMBER = 'your_twilio_phone_number_here';
-const DESTINATION_PHONE_NUMBER = 'the_destination_phone_number_here';
-```
+A agente segue um prompt específico com as seguintes diretrizes:
 
-4. (Optional) Modify the AI system prompt:
-```javascript
-const SYSTEM_PROMPT = 'Your name is Steve and you are calling...';
-```
+- Foco total na promoção do dia da Gol de Bet.
+- Não responde a assuntos fora do escopo (IA, política, culinária, etc).
+- Respostas preparadas para perguntas como:
+  - **Qual o depósito mínimo?** → R$30,00
+  - **Qual o saque mínimo?** → R$30,00
+  - **A casa é regulamentada?** → Sim, possui licença nacional para operar no Brasil.
+- Destaques da oferta:
+  - Bônus exclusivos
+  - Saques via PIX instantâneo
+  - Super *ods* (pronúncia ajustada para evitar erros)
+  - Rodadas grátis semanais
 
-## Running the Application
+## 🛠️ Tecnologias Utilizadas
 
-Start the application using either:
-```bash
-pnpm start
-```
+- **Ultravox** – Execução de chamadas de voz com IA
+- **Twilio** – Envio de SMS
+- **n8n** – Orquestração dos fluxos de automação
+- **Google Sheets** – Armazenamento dos leads
+- **JavaScript / TypeScript** – Scripts auxiliares
+- **Prompt Engineering** – Para controle preciso do comportamento da IA
 
-The application will:
-1. Create an Ultravox call session
-2. Initiate a phone call through Twilio
-3. Connect the AI agent to the call
+## 🔄 Fluxo da Chamada
 
-## Console Output
-
-When running successfully, you should see something like:
-```
-Creating Ultravox call...
-Got joinUrl: https://...
-Call initiated: CA1234...
-```
-
-## Troubleshooting
-
-If you encounter errors:
-1. Verify all API keys and credentials are correct
-2. Ensure the destination phone number is in a valid format (e.g., +1234567890)
-3. Check that your Twilio number is capable of making outbound calls
-
-## Project Structure
-
-- `index.js` - Main application file containing the call logic
-- `package.json` - Project dependencies and scripts
-- `README.md` - This documentation file
+1. Chamada iniciada com apresentação da Rafaela.
+2. Promoção explicada com urgência e clareza.
+3. Caso o usuário não responda, fallback ativado com uma segunda tentativa.
+4. Se houver interesse, SMS enviado com o link.
+5. Chamada é encerrada automaticamente com `hangUp()`.
