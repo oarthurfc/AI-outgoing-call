@@ -28,7 +28,7 @@ Com essa flexibilidade, o sistema pode ser reaproveitado para **diferentes nicho
 
 - **Twilio**: Utilizado para realizar as ligações automatizadas e gerenciar interações com os usuários.
 - **Ultravox**: Plataforma de **Text-to-Speech (TTS)** para gerar a fala da agente de voz.
-- **n8n** – Orquestração dos fluxos de automação.
+- **n8n**: Orquestração dos fluxos de automação.
 - **Node.js + Express**: Backend para orquestrar a lógica do sistema e expor os endpoints da API.
 - **SMS Funnel**: Plataforma para envio de mensagens SMS automáticas.
 
