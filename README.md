@@ -33,9 +33,12 @@ Com essa flexibilidade, o sistema pode ser reaproveitado para **diferentes nicho
 - **SMS Funnel**: Plataforma para envio de mensagens SMS automáticas.
 
 ## 🔄 Fluxo da Chamada
+![n8n-flow](https://github.com/oarthurfc/AI-outgoing-call/blob/main/n8n-flow.png)
 
-1. Chamada iniciada com a apresentação da agente de voz.
-2. Oferta explicada de forma clara e objetiva.
-3. Caso o usuário não responda, fallback ativado com uma segunda tentativa.
-4. Se houver interesse, SMS enviado com o link.
-5. Chamada é encerrada automaticamente com `hangUp()`.
+1. Todos os leads são bucados de uma planilha do Google Sheets.
+2. Inicia-se um loop iterando sobre o array de leads.
+3. Uma requisição HTTP é feita para iniciar a chamada.
+4. Chamada é encerrada automaticamente com `hangUp()`.
+5. Um WebHook é acionado assim que a chamada finaliza.
+6. Se houver interesse, a linha referente ao contato chamado é atualizada na planilha.
+7. Uma requisição HTTP é enviada para o WebHook para adicionar o lead na lista de disparos de SMS.
